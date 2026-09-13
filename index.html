@@ -3,656 +3,589 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BandMatch — найди своих музыкантов</title>
+<title>BandMatch — Найди свою группу</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
   tailwind.config = {
     theme: {
       extend: {
         colors: {
-          bg: '#120F16',
-          surface: '#1C1822',
-          surface2: '#241F2C',
-          ink: '#F4EFE7',
-          inkmuted: '#9C93A8',
-          gold: '#F2B84B',
-          coral: '#FF5C72',
-          line: 'rgba(244,239,231,0.09)',
+          ink: '#0B0A10',
+          surface: '#16141D',
+          surface2: '#1E1B27',
+          line: 'rgba(255,255,255,0.08)',
+          amber: '#FF7A3D',
+          amberDim: '#C25A29',
+          violet: '#8B6CF2',
+          mist: '#A79FB2',
         },
         fontFamily: {
-          display: ['Unbounded', 'sans-serif'],
-          body: ['Manrope', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          sans: ['Inter', 'sans-serif'],
         },
+        borderRadius: {
+          '2xl': '20px',
+          '3xl': '28px',
+        }
       }
     }
   }
 </script>
 <style>
+  * { -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
   body {
-    background: #0B090E;
-    font-family: 'Manrope', sans-serif;
-    color: #F4EFE7;
+    background: #08070C;
+    font-family: 'Inter', sans-serif;
   }
-  .font-display { font-family: 'Unbounded', sans-serif; }
+  .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+  /* ---- phone shell ---- */
+  #app {
+    background: #0B0A10;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  @media (min-width: 640px) {
+    #app {
+      min-height: 92vh;
+      max-height: 900px;
+      margin-top: 4vh;
+      border-radius: 40px;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 40px 100px -20px rgba(0,0,0,0.7), 0 0 0 10px #050408;
+      overflow: hidden;
+    }
+  }
+
+  /* ---- screen switching ---- */
+  .screen {
+    display: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+    flex-direction: column;
+    position: relative;
+  }
+  @media (min-width: 640px) {
+    .screen { min-height: 92vh; max-height: 900px; }
+  }
+  .screen.active {
+    display: flex;
+    animation: screenIn .45s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* spotlight glow */
+  .spotlight {
+    background:
+      radial-gradient(60% 45% at 50% 0%, rgba(255,122,61,0.20) 0%, rgba(255,122,61,0) 70%),
+      radial-gradient(50% 40% at 85% 15%, rgba(139,108,242,0.16) 0%, rgba(139,108,242,0) 70%);
+  }
+
+  /* smooth collapse for "собираю группу" block */
+  .reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows .45s cubic-bezier(.16,1,.3,1), opacity .3s ease;
+  }
+  .reveal.open { grid-template-rows: 1fr; opacity: 1; }
+  .reveal > div { overflow: hidden; min-height: 0; }
+
+  /* progress track */
+  .progress-track { background: rgba(255,255,255,0.08); }
+  .progress-fill {
+    background: linear-gradient(90deg, #FF7A3D, #FFB37A);
+    transition: width .5s cubic-bezier(.16,1,.3,1);
+  }
+
+  /* choice card */
+  .choice-card {
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #16141D;
+    transition: border-color .25s ease, background .25s ease, transform .15s ease;
+  }
+  .choice-card:active { transform: scale(0.98); }
+  .choice-card.selected {
+    border-color: #FF7A3D;
+    background: linear-gradient(180deg, rgba(255,122,61,0.14), rgba(255,122,61,0.04));
+  }
+  .choice-dot {
+    border: 2px solid rgba(255,255,255,0.25);
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .choice-card.selected .choice-dot {
+    border-color: #FF7A3D;
+    background: #FF7A3D;
+    box-shadow: inset 0 0 0 3px #16141D;
+  }
+
+  /* chips */
+  .chip {
+    border: 1px solid rgba(255,255,255,0.10);
+    background: #16141D;
+    color: #C9C3D1;
+    transition: all .2s ease;
+  }
+  .chip.selected {
+    border-color: #FF7A3D;
+    background: rgba(255,122,61,0.14);
+    color: #FFD8BF;
+  }
+  .chip:active { transform: scale(0.96); }
+
+  /* level segmented control */
+  .level-btn {
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #16141D;
+    color: #A79FB2;
+    transition: all .2s ease;
+  }
+  .level-btn.selected {
+    border-color: #FF7A3D;
+    background: rgba(255,122,61,0.14);
+    color: #FFD8BF;
+  }
+
+  /* inputs */
+  .field {
+    background: #16141D;
+    border: 1px solid rgba(255,255,255,0.09);
+    color: #F5F3F7;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .field::placeholder { color: #6E6779; }
+  .field:focus {
+    outline: none;
+    border-color: #FF7A3D;
+    background: #1B1822;
+  }
+  select.field {
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  /* login buttons */
+  .login-btn {
+    background: #16141D;
+    border: 1px solid rgba(255,255,255,0.09);
+    transition: transform .15s ease, border-color .2s ease, background .2s ease;
+  }
+  .login-btn:active { transform: scale(0.97); }
+  .login-btn:hover { border-color: rgba(255,255,255,0.18); background: #1B1822; }
+
+  /* primary CTA */
+  .cta {
+    background: linear-gradient(180deg, #FF8A50, #FF6A26);
+    box-shadow: 0 10px 26px -8px rgba(255,106,38,0.55);
+    transition: transform .15s ease, opacity .2s ease;
+  }
+  .cta:active { transform: scale(0.98); }
+  .cta:disabled { opacity: 0.4; box-shadow: none; }
+
+  .ghost-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: background .2s ease, transform .15s ease;
+  }
+  .ghost-btn:active { transform: scale(0.97); }
+
+  /* card stack */
+  .card-stack { position: relative; }
+  .swipe-card {
+    position: absolute;
+    inset: 0;
+    border-radius: 28px;
+    overflow: hidden;
+    transition: transform .45s cubic-bezier(.16,1,.3,1), opacity .4s ease;
+    will-change: transform;
+  }
+  .swipe-card.fly-right { transform: translate(140%, -10%) rotate(18deg) !important; opacity: 0; }
+  .swipe-card.fly-left { transform: translate(-140%, -10%) rotate(-18deg) !important; opacity: 0; }
+  .stamp {
+    position: absolute;
+    top: 28px;
+    padding: 6px 16px;
+    border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    border: 3px solid;
+    transform: rotate(-14deg);
+    opacity: 0;
+    transition: opacity .25s ease;
+  }
+  .stamp.like { left: 22px; color: #6EE7A0; border-color: #6EE7A0; }
+  .stamp.nope { right: 22px; color: #FF6A6A; border-color: #FF6A6A; transform: rotate(14deg); }
 
   ::-webkit-scrollbar { width: 0; height: 0; }
-
-  .grain {
-    position: fixed; inset: 0; pointer-events: none; z-index: 60;
-    opacity: 0.035; mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-
-  #phone { background-color: #120F16; }
-
-  .eq-bar {
-    background: linear-gradient(180deg, #F2B84B 0%, #FF5C72 100%);
-    border-radius: 999px; transform-origin: bottom;
-    animation: eq 1.4s ease-in-out infinite;
-  }
-  @keyframes eq { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }
-
-  .btn-pop { transition: transform .2s ease, background-color .2s ease, border-color .2s ease; }
-  .btn-pop:hover { transform: translateY(-2px); }
-  .btn-pop:active { transform: translateY(0); }
-
-  .circle-btn { transition: transform .2s ease, background-color .2s ease; }
-  .circle-btn:hover { transform: scale(1.08); }
-  .circle-btn:active { transform: scale(0.92); }
-
-  .row-tap { transition: background-color .2s ease, transform .2s ease; }
-  .row-tap:active { transform: scale(0.985); }
-
-  .nav-btn { transition: color .2s ease, transform .2s ease; }
-  .nav-btn:active { transform: scale(0.9); }
-
-  /* feed swipe card */
-  #feed-card {
-    transition: transform .38s cubic-bezier(.2,.7,.3,1), opacity .38s ease;
-  }
-  #feed-card.swipe-right { transform: translateX(140%) rotate(18deg); opacity: 0; }
-  #feed-card.swipe-left  { transform: translateX(-140%) rotate(-18deg); opacity: 0; }
-  #feed-card.enter { animation: cardIn .32s ease; }
-  @keyframes cardIn { from { transform: scale(0.94) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
-
-  .stamp { transition: opacity .25s ease, transform .25s ease; }
-
-  /* toast */
-  #toast { transition: transform .3s cubic-bezier(.2,.7,.3,1), opacity .3s ease; }
-  #toast.show { transform: translate(-50%, 0); opacity: 1; }
-  #toast.hide { transform: translate(-50%, 12px); opacity: 0; pointer-events: none; }
-
-  /* sub-view slide */
-  .slide-view { transition: transform .3s cubic-bezier(.2,.7,.3,1); }
-
-  :focus-visible { outline: 2px solid #F2B84B; outline-offset: 2px; }
-
-  .waveform span { background: #9C93A8; border-radius: 999px; }
-  .waveform.playing span { background: linear-gradient(180deg,#F2B84B,#FF5C72); animation: eq 1s ease-in-out infinite; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .eq-bar, .waveform.playing span { animation: none !important; }
-    #feed-card, #toast, .slide-view { transition: none !important; }
-  }
 </style>
 </head>
-<body class="antialiased">
-<div class="grain"></div>
+<body class="text-[#F5F3F7]">
 
-<div id="phone" class="relative h-screen sm:h-[844px] w-full max-w-[430px] mx-auto overflow-hidden sm:my-6 sm:rounded-[2.75rem] sm:border sm:border-line sm:shadow-2xl">
+<div id="app" class="mx-auto max-w-[430px] w-full relative sm:mt-[4vh]">
 
-  <!-- ============ LANDING ============ -->
-  <div id="screen-landing" class="absolute inset-0 overflow-y-auto">
-    <header class="px-6 pt-8 flex items-center gap-2">
-      <svg width="28" height="28" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="15" cy="15" r="15" fill="#F2B84B"/>
-        <path d="M11 9.5V19.2C10.5 19 10 18.9 9.5 18.9C8 18.9 6.8 19.9 6.8 21.1C6.8 22.3 8 23.3 9.5 23.3C11 23.3 12.2 22.3 12.2 21.1V13L18 11.6V16.6C17.5 16.4 17 16.3 16.5 16.3C15 16.3 13.8 17.3 13.8 18.5" stroke="#120F16" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="font-display font-semibold text-lg">BandMatch</span>
-    </header>
-
-    <section class="px-6 pt-10 pb-10">
-      <h1 class="font-display font-extrabold leading-[1.08] text-4xl">
-        Найди своих<br>музыкантов
-      </h1>
-      <p class="mt-5 text-inkmuted leading-relaxed">
-        Свайпай профили и заявки на поиск музыкантов, находи людей,
-        с которыми действительно хочется репетировать.
-      </p>
-
-      <div class="mt-10 flex items-end gap-[5px] h-14" aria-hidden="true">
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:0s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.15s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.3s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.1s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.45s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.05s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.35s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.2s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.5s"></div>
-        <div class="eq-bar w-[5px] h-full" style="animation-delay:.25s"></div>
-      </div>
-
-      <div class="mt-10 flex flex-col gap-3">
-        <button onclick="enterApp()" class="btn-pop bg-gold text-bg font-display font-semibold text-sm py-4 rounded-full hover:bg-[#f7c565]">
-          Создать аккаунт
-        </button>
-        <button onclick="enterApp()" class="btn-pop border border-line text-ink font-medium text-sm py-4 rounded-full hover:border-ink/40 hover:bg-surface">
-          Войти
-        </button>
-      </div>
-    </section>
-  </div>
-
-  <!-- ============ APP SHELL ============ -->
-  <div id="screen-app" class="absolute inset-0 hidden flex-col">
-
-    <!-- header -->
-    <header class="shrink-0 px-6 pt-7 pb-4 flex items-center justify-between border-b border-line">
-      <h2 id="app-header-title" class="font-display font-semibold text-xl">Лента</h2>
-      <div class="w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-xs" style="background:linear-gradient(135deg,#F2B84B,#FF5C72); color:#120F16;">МК</div>
-    </header>
-
-    <!-- ===== TAB: FEED ===== -->
-    <div id="tab-feed" class="flex-1 overflow-y-auto px-5 pt-6 pb-4">
-      <div class="relative h-[520px]">
-        <!-- decorative peeking cards -->
-        <div class="absolute inset-x-3 top-3 h-full bg-surface2 rounded-[2rem] border border-line" style="transform: scale(0.96) translateY(6px);"></div>
-        <div class="absolute inset-x-1.5 top-1.5 h-full bg-surface rounded-[2rem] border border-line" style="transform: scale(0.98) translateY(3px);"></div>
-
-        <div id="feed-card" class="absolute inset-0 bg-surface rounded-[2rem] border border-line overflow-hidden flex flex-col">
-          <div id="feed-card-body" class="flex-1 overflow-hidden"></div>
+  <!-- ============ 1. WELCOME ============ -->
+  <section id="screen-welcome" class="screen active spotlight">
+    <div class="flex-1 flex flex-col px-7 pt-16 pb-10">
+      <div class="flex-1 flex flex-col items-center justify-center text-center">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber to-violet flex items-center justify-center mb-6 rotate-[-6deg]">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M9 18V5l12-2v13" stroke="#0B0A10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" stroke="#0B0A10" stroke-width="2"/><circle cx="18" cy="16" r="3" stroke="#0B0A10" stroke-width="2"/></svg>
         </div>
-
-        <div id="stamp-like" class="stamp opacity-0 absolute top-8 left-6 text-gold font-display font-extrabold text-2xl border-2 border-gold rounded-xl px-3 py-1 -rotate-12 pointer-events-none">ЛАЙК</div>
-        <div id="stamp-skip" class="stamp opacity-0 absolute top-8 right-6 text-inkmuted font-display font-extrabold text-2xl border-2 border-inkmuted rounded-xl px-3 py-1 rotate-12 pointer-events-none">СКИП</div>
+        <h1 class="font-display text-[40px] leading-none font-semibold tracking-tight">BandMatch</h1>
+        <p class="mt-4 text-[16px] text-mist leading-relaxed max-w-[280px]">Найди людей для своей группы за минуты</p>
       </div>
 
-      <div class="mt-6 flex items-center justify-center gap-6">
-        <button aria-label="Пропустить" onclick="swipeFeed('skip')" class="circle-btn w-16 h-16 rounded-full border border-line bg-surface flex items-center justify-center hover:border-inkmuted">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9C93A8" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      <div class="flex flex-col gap-3 mt-8">
+        <button onclick="showScreen('basic')" class="login-btn w-full rounded-2xl px-5 py-4 flex items-center gap-3 text-left">
+          <span class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[13px] font-bold text-[#4285F4] font-display">G</span>
+          <span class="text-[15px] font-medium">Войти через Google</span>
         </button>
-        <button aria-label="Лайк" onclick="swipeFeed('like')" class="circle-btn w-[4.5rem] h-[4.5rem] rounded-full bg-coral flex items-center justify-center hover:bg-[#ff7186]">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="#120F16"><path d="M12 21s-7.5-4.6-10.2-9.1C.4 9.1 1.4 5.6 4.6 4.4c2-.8 4.2 0 5.4 1.8.4.6.7 1.3 1 2 .3-.7.6-1.4 1-2 1.2-1.8 3.4-2.6 5.4-1.8 3.2 1.2 4.2 4.7 2.8 7.5C19.5 16.4 12 21 12 21z"/></svg>
+        <button onclick="showScreen('basic')" class="login-btn w-full rounded-2xl px-5 py-4 flex items-center gap-3 text-left">
+          <span class="w-8 h-8 rounded-full bg-[#0077FF] flex items-center justify-center text-[13px] font-bold text-white font-display">VK</span>
+          <span class="text-[15px] font-medium">Войти через VK</span>
+        </button>
+        <button onclick="showScreen('basic')" class="login-btn w-full rounded-2xl px-5 py-4 flex items-center gap-3 text-left">
+          <span class="w-8 h-8 rounded-full bg-[#26A5E4] flex items-center justify-center text-white">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M21.5 4.5L2.8 11.9c-1.2.5-1.2 1.2-.2 1.5l4.8 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.2-2.1 4.6 3.4c.8.5 1.4.2 1.6-.8l3-14.1c.3-1.2-.4-1.7-1.4-1.7z"/></svg>
+          </span>
+          <span class="text-[15px] font-medium">Войти через Telegram</span>
+        </button>
+        <button onclick="showScreen('basic')" class="login-btn w-full rounded-2xl px-5 py-4 flex items-center gap-3 text-left">
+          <span class="w-8 h-8 rounded-full bg-surface2 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18v12H3V6z" stroke="#F5F3F7" stroke-width="1.6"/><path d="M3 7l9 6 9-6" stroke="#F5F3F7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="text-[15px] font-medium">Войти по email</span>
         </button>
       </div>
-      <div class="mt-3 flex justify-center gap-2 text-xs text-inkmuted">
-        <span>Пропустить</span><span class="opacity-40">·</span><span>Лайк</span>
-      </div>
+
+      <p class="text-center text-[12px] text-mist/70 mt-6 px-4">Продолжая, ты соглашаешься с условиями использования и политикой конфиденциальности</p>
     </div>
+  </section>
 
-    <!-- ===== TAB: REQUESTS ===== -->
-    <div id="tab-requests" class="flex-1 overflow-hidden hidden relative">
+  <!-- ============ 2. BASIC INFO ============ -->
+  <section id="screen-basic" class="screen">
+    <div class="flex-1 flex flex-col px-7 pt-8">
+      <button onclick="showScreen('welcome')" class="w-9 h-9 -ml-2 flex items-center justify-center text-mist">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
 
-      <div id="requests-list" class="slide-view absolute inset-0 overflow-y-auto px-5 pt-5 pb-6">
-        <div class="flex items-center justify-between mb-4">
-          <p class="text-sm text-inkmuted">Мои заявки</p>
-          <button onclick="openCreateRequest()" aria-label="Новая заявка" class="btn-pop w-10 h-10 rounded-full bg-gold text-bg flex items-center justify-center hover:bg-[#f7c565]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#120F16" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          </button>
+      <h2 class="font-display text-[28px] font-semibold mt-6 tracking-tight">Расскажи о себе</h2>
+      <p class="text-mist text-[14px] mt-2">Это увидят другие музыканты в твоём профиле</p>
+
+      <div class="flex flex-col gap-4 mt-8">
+        <div>
+          <label class="text-[13px] text-mist block mb-2">Имя</label>
+          <input id="input-name" oninput="validateBasic()" type="text" placeholder="Как тебя зовут?" class="field w-full rounded-2xl px-4 py-3.5 text-[15px]">
         </div>
-        <div id="requests-list-items" class="flex flex-col gap-3"></div>
-      </div>
-
-      <div id="requests-create" class="slide-view absolute inset-0 overflow-y-auto px-5 pt-5 pb-6 hidden" style="transform: translateX(100%);">
-        <div class="flex items-center gap-3 mb-5">
-          <button onclick="closeCreateRequest()" aria-label="Назад" class="circle-btn w-9 h-9 rounded-full border border-line flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F4EFE7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <p class="font-display font-semibold text-base">Новая заявка</p>
+        <div>
+          <label class="text-[13px] text-mist block mb-2">Город</label>
+          <input id="input-city" oninput="validateBasic()" type="text" placeholder="Где ты играешь?" class="field w-full rounded-2xl px-4 py-3.5 text-[15px]">
         </div>
-
-        <div class="flex flex-col gap-4">
-          <div>
-            <label class="text-xs text-inkmuted block mb-1.5">Название заявки</label>
-            <input id="rq-title" type="text" placeholder="Ищу барабанщика в инди-рок группу"
-              class="w-full bg-surface border border-line rounded-2xl px-4 py-3.5 text-sm text-ink placeholder:text-inkmuted/60 focus:border-gold outline-none">
+        <div>
+          <label class="text-[13px] text-mist block mb-2">Основной инструмент</label>
+          <div class="relative">
+            <select id="input-instrument" onchange="validateBasic()" class="field w-full rounded-2xl px-4 py-3.5 text-[15px] pr-10">
+              <option value="" disabled selected>Выбери инструмент</option>
+              <option>Гитара</option>
+              <option>Барабаны</option>
+              <option>Бас-гитара</option>
+              <option>Вокал</option>
+              <option>Клавишные</option>
+              <option>Другое</option>
+            </select>
+            <svg class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#A79FB2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
-          <div>
-            <label class="text-xs text-inkmuted block mb-1.5">Какой инструмент нужен</label>
-            <input id="rq-instrument" type="text" placeholder="Барабаны"
-              class="w-full bg-surface border border-line rounded-2xl px-4 py-3.5 text-sm text-ink placeholder:text-inkmuted/60 focus:border-gold outline-none">
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs text-inkmuted block mb-1.5">Жанр</label>
-              <input id="rq-genre" type="text" placeholder="Инди-рок"
-                class="w-full bg-surface border border-line rounded-2xl px-4 py-3.5 text-sm text-ink placeholder:text-inkmuted/60 focus:border-gold outline-none">
-            </div>
-            <div>
-              <label class="text-xs text-inkmuted block mb-1.5">Город</label>
-              <input id="rq-city" type="text" placeholder="Москва"
-                class="w-full bg-surface border border-line rounded-2xl px-4 py-3.5 text-sm text-ink placeholder:text-inkmuted/60 focus:border-gold outline-none">
-            </div>
-          </div>
-          <div>
-            <label class="text-xs text-inkmuted block mb-1.5">Описание</label>
-            <textarea id="rq-desc" rows="4" placeholder="Расскажите о группе, графике репетиций и кого именно ищете"
-              class="w-full bg-surface border border-line rounded-2xl px-4 py-3.5 text-sm text-ink placeholder:text-inkmuted/60 focus:border-gold outline-none resize-none"></textarea>
-          </div>
-
-          <button onclick="publishRequest()" class="btn-pop mt-2 bg-gold text-bg font-display font-semibold text-sm py-4 rounded-full hover:bg-[#f7c565]">
-            Опубликовать заявку
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- ===== TAB: MATCHES ===== -->
-    <div id="tab-matches" class="flex-1 overflow-y-auto hidden px-5 pt-5 pb-6">
-      <p class="text-sm text-inkmuted mb-4">Совпадения по лайкам — можно сразу написать</p>
-      <div id="matches-list" class="flex flex-col divide-y divide-line bg-surface border border-line rounded-3xl overflow-hidden"></div>
-    </div>
-
-    <!-- ===== TAB: PROFILE ===== -->
-    <div id="tab-profile" class="flex-1 overflow-y-auto hidden">
-      <div class="relative h-40" style="background: radial-gradient(120% 140% at 30% 0%, #3a2f4a 0%, #1C1822 70%);">
-        <div class="absolute -bottom-10 left-5 w-24 h-24 rounded-full flex items-center justify-center font-display font-bold text-2xl border-4 border-bg" style="background:linear-gradient(135deg,#F2B84B,#FF5C72); color:#120F16;">МК</div>
+    <div class="px-7 pb-8 pt-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[12px] text-mist">Шаг 1 из 3</span>
+        <span class="text-[12px] text-mist">33%</span>
       </div>
-      <div class="pt-14 px-5 pb-8">
-        <div class="flex items-baseline justify-between">
-          <h3 class="font-display font-semibold text-xl">Макс Крылов</h3>
-          <span class="text-inkmuted text-sm">29 лет</span>
-        </div>
-        <p class="text-sm text-inkmuted mt-1">Москва</p>
+      <div class="progress-track w-full h-1.5 rounded-full overflow-hidden mb-5">
+        <div class="progress-fill h-full rounded-full" style="width:33%"></div>
+      </div>
+      <button id="btn-basic" onclick="showScreen('looking')" disabled class="cta w-full rounded-2xl py-4 text-[15px] font-semibold font-display">Продолжить</button>
+    </div>
+  </section>
 
-        <div class="mt-4 flex flex-wrap gap-2">
-          <span class="text-xs font-medium bg-surface border border-line rounded-full px-3 py-1 text-gold">Барабаны</span>
-          <span class="text-xs font-medium bg-surface border border-line rounded-full px-3 py-1 text-gold">Перкуссия</span>
-          <span class="text-xs font-medium bg-surface border border-line rounded-full px-3 py-1 text-inkmuted">Инди-рок · Пост-панк</span>
-        </div>
+  <!-- ============ 3. LOOKING FOR ============ -->
+  <section id="screen-looking" class="screen">
+    <div class="flex-1 flex flex-col px-7 pt-8 overflow-y-auto pb-4">
+      <button onclick="showScreen('basic')" class="w-9 h-9 -ml-2 flex items-center justify-center text-mist">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
 
-        <p class="mt-4 text-sm text-inkmuted leading-relaxed">
-          Играю на ударных 12 лет, из них 4 года в клубных группах. Ищу
-          постоянный состав для регулярных концертов, не разовые джемы.
-        </p>
+      <h2 class="font-display text-[28px] font-semibold mt-6 tracking-tight">Что ты хочешь найти?</h2>
+      <p class="text-mist text-[14px] mt-2">Можно изменить позже в настройках профиля</p>
 
-        <div class="mt-6">
-          <p class="text-xs text-inkmuted mb-2">Демозапись</p>
-          <div class="bg-surface border border-line rounded-2xl p-4 flex items-center gap-3">
-            <button id="play-btn" onclick="togglePlay()" aria-label="Воспроизвести" class="circle-btn shrink-0 w-11 h-11 rounded-full bg-gold flex items-center justify-center">
-              <svg id="play-icon" width="16" height="16" viewBox="0 0 24 24" fill="#120F16"><path d="M8 5v14l11-7z"/></svg>
-            </button>
-            <div id="waveform" class="waveform flex items-end gap-[3px] h-8 flex-1">
-              <span class="w-[3px] h-[40%]"></span><span class="w-[3px] h-[70%]"></span><span class="w-[3px] h-[30%]"></span>
-              <span class="w-[3px] h-[90%]"></span><span class="w-[3px] h-[55%]"></span><span class="w-[3px] h-[75%]"></span>
-              <span class="w-[3px] h-[35%]"></span><span class="w-[3px] h-[60%]"></span><span class="w-[3px] h-[45%]"></span>
-              <span class="w-[3px] h-[85%]"></span><span class="w-[3px] h-[50%]"></span><span class="w-[3px] h-[65%]"></span>
-              <span class="w-[3px] h-[30%]"></span><span class="w-[3px] h-[70%]"></span><span class="w-[3px] h-[40%]"></span>
-              <span class="w-[3px] h-[80%]"></span><span class="w-[3px] h-[55%]"></span><span class="w-[3px] h-[35%]"></span>
-            </div>
-            <span class="text-xs text-inkmuted shrink-0">1:58</span>
+      <div class="flex flex-col gap-3 mt-7">
+        <div id="choice-join" onclick="selectGoal('join')" class="choice-card selected rounded-2xl px-5 py-4 flex items-center gap-4 cursor-pointer">
+          <div class="choice-dot w-5 h-5 rounded-full shrink-0"></div>
+          <div>
+            <p class="text-[15px] font-semibold">Ищу группу</p>
+            <p class="text-[13px] text-mist mt-0.5">Хочу присоединиться к существующему коллективу</p>
           </div>
         </div>
-
-        <button class="btn-pop mt-8 w-full border border-line text-sm font-medium py-3.5 rounded-full hover:border-ink/40 hover:bg-surface">
-          Редактировать профиль
-        </button>
+        <div id="choice-form" onclick="selectGoal('form')" class="choice-card rounded-2xl px-5 py-4 flex items-center gap-4 cursor-pointer">
+          <div class="choice-dot w-5 h-5 rounded-full shrink-0"></div>
+          <div>
+            <p class="text-[15px] font-semibold">Собираю группу</p>
+            <p class="text-[13px] text-mist mt-0.5">Ищу музыкантов, чтобы создать новый состав</p>
+          </div>
+        </div>
       </div>
+
+      <!-- reveal block -->
+      <div id="reveal-members" class="reveal mt-2">
+        <div>
+          <div class="pt-6">
+            <p class="text-[13px] text-mist mb-3">Кого не хватает в составе?</p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" onclick="toggleChip(this)" class="chip role-chip rounded-full px-4 py-2 text-[14px]">Гитариста</button>
+              <button type="button" onclick="toggleChip(this)" class="chip role-chip rounded-full px-4 py-2 text-[14px]">Барабанщика</button>
+              <button type="button" onclick="toggleChip(this)" class="chip role-chip rounded-full px-4 py-2 text-[14px]">Басиста</button>
+              <button type="button" onclick="toggleChip(this)" class="chip role-chip rounded-full px-4 py-2 text-[14px]">Вокалиста</button>
+              <button type="button" onclick="toggleChip(this)" class="chip role-chip rounded-full px-4 py-2 text-[14px]">Клавишника</button>
+              <button type="button" onclick="toggleChip(this)" class="chip role-chip rounded-full px-4 py-2 text-[14px]">Другое</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-7">
+        <p class="text-[13px] text-mist mb-3">Жанры <span class="text-mist/60">(необязательно)</span></p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="toggleChip(this)" class="chip rounded-full px-4 py-2 text-[14px]">Рок</button>
+          <button type="button" onclick="toggleChip(this)" class="chip rounded-full px-4 py-2 text-[14px]">Инди</button>
+          <button type="button" onclick="toggleChip(this)" class="chip rounded-full px-4 py-2 text-[14px]">Метал</button>
+          <button type="button" onclick="toggleChip(this)" class="chip rounded-full px-4 py-2 text-[14px]">Джаз</button>
+          <button type="button" onclick="toggleChip(this)" class="chip rounded-full px-4 py-2 text-[14px]">Поп</button>
+          <button type="button" onclick="toggleChip(this)" class="chip rounded-full px-4 py-2 text-[14px]">Электроника</button>
+          <button type="button" onclick="toggleChip(this)" class="chip rounded-full px-4 py-2 text-[14px]">Панк</button>
+          <button type="button" onclick="toggleChip(this)" class="chip rounded-full px-4 py-2 text-[14px]">Хип-хоп</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-7 pb-8 pt-4 shrink-0">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[12px] text-mist">Шаг 2 из 3</span>
+        <span class="text-[12px] text-mist">66%</span>
+      </div>
+      <div class="progress-track w-full h-1.5 rounded-full overflow-hidden mb-5">
+        <div class="progress-fill h-full rounded-full" style="width:66%"></div>
+      </div>
+      <button onclick="showScreen('final')" class="cta w-full rounded-2xl py-4 text-[15px] font-semibold font-display">Продолжить</button>
+    </div>
+  </section>
+
+  <!-- ============ 4. FINAL DETAILS ============ -->
+  <section id="screen-final" class="screen">
+    <div class="flex-1 flex flex-col px-7 pt-8 overflow-y-auto pb-4">
+      <button onclick="showScreen('looking')" class="w-9 h-9 -ml-2 flex items-center justify-center text-mist">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+
+      <h2 class="font-display text-[28px] font-semibold mt-6 tracking-tight">Почти готово</h2>
+      <p class="text-mist text-[14px] mt-2">Последние штрихи для твоего профиля</p>
+
+      <div class="flex flex-col gap-5 mt-7">
+        <div>
+          <label class="text-[13px] text-mist block mb-2">О себе</label>
+          <textarea rows="4" placeholder="Стиль игры, опыт, любимые группы..." class="field w-full rounded-2xl px-4 py-3.5 text-[15px] resize-none"></textarea>
+        </div>
+        <div>
+          <label class="text-[13px] text-mist block mb-2">Ссылка на музыку <span class="text-mist/60">(необязательно)</span></label>
+          <input type="text" placeholder="SoundCloud, YouTube, Spotify..." class="field w-full rounded-2xl px-4 py-3.5 text-[15px]">
+        </div>
+        <div>
+          <label class="text-[13px] text-mist block mb-3">Уровень игры</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="selectLevel(this)" class="level-btn rounded-xl py-3 text-[13px] font-medium">Новичок</button>
+            <button type="button" onclick="selectLevel(this)" class="level-btn selected rounded-xl py-3 text-[13px] font-medium">Средний</button>
+            <button type="button" onclick="selectLevel(this)" class="level-btn rounded-xl py-3 text-[13px] font-medium">Опытный</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-7 pb-8 pt-4 shrink-0">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[12px] text-mist">Шаг 3 из 3</span>
+        <span class="text-[12px] text-mist">100%</span>
+      </div>
+      <div class="progress-track w-full h-1.5 rounded-full overflow-hidden mb-5">
+        <div class="progress-fill h-full rounded-full" style="width:100%"></div>
+      </div>
+      <button onclick="showScreen('feed')" class="cta w-full rounded-2xl py-4 text-[15px] font-semibold font-display">Начать смотреть людей</button>
+    </div>
+  </section>
+
+  <!-- ============ 5. FEED ============ -->
+  <section id="screen-feed" class="screen">
+    <div class="flex items-center justify-between px-6 pt-7 pb-2 shrink-0">
+      <span class="font-display text-[20px] font-semibold tracking-tight">BandMatch</span>
+      <div class="w-9 h-9 rounded-full bg-gradient-to-br from-amber to-violet flex items-center justify-center text-[13px] font-display font-bold">Я</div>
+    </div>
+
+    <div class="flex-1 px-6 pt-3 pb-3 min-h-0">
+      <div id="card-stack" class="card-stack w-full h-full"></div>
+    </div>
+
+    <div class="flex items-center justify-center gap-6 pb-6 shrink-0">
+      <button onclick="swipe('left')" class="w-16 h-16 rounded-full bg-surface border border-line flex items-center justify-center active:scale-95 transition">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#FF6A6A" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+      <button onclick="swipe('right')" class="w-16 h-16 rounded-full cta flex items-center justify-center active:scale-95 transition">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" fill="#0B0A10"/></svg>
+      </button>
     </div>
 
     <!-- bottom nav -->
-    <nav id="bottom-nav" class="shrink-0 border-t border-line px-4 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+10px)] flex items-center justify-around bg-bg">
-      <button data-tab="feed" onclick="switchTab('feed')" class="nav-btn flex flex-col items-center gap-1 px-3 py-1 text-gold">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="17" rx="3"/><path d="M8 9h3M8 13h3"/><path d="M20 8l-4 2v6l4 2z"/></svg>
+    <div class="border-t border-line px-8 py-3 flex items-center justify-between shrink-0" style="background:#0E0C13;">
+      <button class="flex flex-col items-center gap-1 text-amber">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11.5L12 4l9 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9h14v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="text-[11px] font-medium">Лента</span>
       </button>
-      <button data-tab="requests" onclick="switchTab('requests')" class="nav-btn flex flex-col items-center gap-1 px-3 py-1 text-inkmuted">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 3h3v15H5V6h3z"/><path d="M9 11h6M9 15h6"/></svg>
-        <span class="text-[11px] font-medium">Заявки</span>
+      <button class="flex flex-col items-center gap-1 text-mist">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span class="text-[11px]">Совпадения</span>
       </button>
-      <button data-tab="matches" onclick="switchTab('matches')" class="nav-btn relative flex flex-col items-center gap-1 px-3 py-1 text-inkmuted">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-10.2-9.1C.4 9.1 1.4 5.6 4.6 4.4c2-.8 4.2 0 5.4 1.8.4.6.7 1.3 1 2 .3-.7.6-1.4 1-2 1.2-1.8 3.4-2.6 5.4-1.8 3.2 1.2 4.2 4.7 2.8 7.5C19.5 16.4 12 21 12 21z"/></svg>
-        <span class="text-[11px] font-medium">Мэтчи</span>
-        <span id="matches-badge" class="absolute -top-0.5 right-1 w-4 h-4 rounded-full bg-coral text-[9px] font-bold text-bg flex items-center justify-center">2</span>
+      <button class="flex flex-col items-center gap-1 text-mist">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span class="text-[11px]">Чаты</span>
       </button>
-      <button data-tab="profile" onclick="switchTab('profile')" class="nav-btn flex flex-col items-center gap-1 px-3 py-1 text-inkmuted">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>
-        <span class="text-[11px] font-medium">Профиль</span>
-      </button>
-    </nav>
-  </div>
-
-  <!-- ============ CHAT (overlay) ============ -->
-  <div id="screen-chat" class="absolute inset-0 hidden flex-col bg-bg">
-    <header class="shrink-0 px-4 pt-7 pb-4 border-b border-line flex items-center gap-3">
-      <button onclick="closeChat()" aria-label="Назад" class="circle-btn w-9 h-9 rounded-full border border-line flex items-center justify-center">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F4EFE7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div id="chat-avatar" class="w-9 h-9 rounded-full flex items-center justify-center font-display font-bold text-xs shrink-0"></div>
-      <div class="min-w-0">
-        <p id="chat-name" class="font-medium text-sm truncate"></p>
-        <p id="chat-sub" class="text-xs text-inkmuted truncate"></p>
-      </div>
-    </header>
-
-    <div id="chat-messages" class="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-3"></div>
-
-    <div class="shrink-0 border-t border-line p-3 pb-[calc(env(safe-area-inset-bottom)+12px)] flex items-center gap-2">
-      <input id="chat-input" type="text" placeholder="Написать сообщение…"
-        class="flex-1 bg-surface border border-line rounded-full px-4 py-3 text-sm text-ink placeholder:text-inkmuted/60 focus:border-gold outline-none"
-        onkeydown="if(event.key==='Enter') sendMessage()">
-      <button onclick="sendMessage()" aria-label="Отправить" class="circle-btn shrink-0 w-11 h-11 rounded-full bg-gold flex items-center justify-center">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="#120F16"><path d="M3 20l18-8L3 4v6l12 2-12 2z"/></svg>
+      <button class="flex flex-col items-center gap-1 text-mist">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="text-[11px]">Профиль</span>
       </button>
     </div>
-  </div>
-
-  <!-- toast -->
-  <div id="toast" class="hide absolute left-1/2 bottom-24 -translate-x-1/2 bg-surface2 border border-line text-sm font-medium px-5 py-3 rounded-full shadow-2xl z-50 whitespace-nowrap"></div>
+  </section>
 
 </div>
 
 <script>
-  /* ---------------- navigation ---------------- */
-  function enterApp() {
-    document.getElementById('screen-landing').classList.add('hidden');
-    document.getElementById('screen-app').classList.remove('hidden');
-    document.getElementById('screen-app').classList.add('flex');
-    switchTab('feed');
+  // ---------- screen switching ----------
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + name);
+    target.classList.add('active');
+    target.scrollTop = 0;
+    if (name === 'feed') renderStack();
   }
 
-  const tabTitles = { feed: 'Лента', requests: 'Заявки', matches: 'Мэтчи', profile: 'Профиль' };
-
-  function switchTab(tab) {
-    ['feed','requests','matches','profile'].forEach(t => {
-      document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
-    });
-    document.getElementById('app-header-title').textContent = tabTitles[tab];
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-      const active = btn.dataset.tab === tab;
-      btn.classList.toggle('text-gold', active);
-      btn.classList.toggle('text-inkmuted', !active);
-    });
-    if (tab === 'requests') closeCreateRequest(true);
+  // ---------- step 2: basic info validation ----------
+  function validateBasic() {
+    const name = document.getElementById('input-name').value.trim();
+    const city = document.getElementById('input-city').value.trim();
+    const instrument = document.getElementById('input-instrument').value;
+    document.getElementById('btn-basic').disabled = !(name && city && instrument);
   }
 
-  function showToast(msg) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.remove('hide');
-    el.classList.add('show');
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => { el.classList.remove('show'); el.classList.add('hide'); }, 2200);
+  // ---------- step 3: goal selection ----------
+  function selectGoal(goal) {
+    const join = document.getElementById('choice-join');
+    const form = document.getElementById('choice-form');
+    const reveal = document.getElementById('reveal-members');
+    if (goal === 'join') {
+      join.classList.add('selected');
+      form.classList.remove('selected');
+      reveal.classList.remove('open');
+    } else {
+      form.classList.add('selected');
+      join.classList.remove('selected');
+      reveal.classList.add('open');
+    }
   }
 
-  /* ---------------- feed / swipe ---------------- */
-  const feedItems = [
-    { type:'profile', initials:'АК', name:'Аня К.', age:27, city:'Санкт-Петербург', instruments:['Вокал','Гитара'], genres:['Инди','Дрим-поп'],
-      bio:'Пишу песни на кухне в два часа ночи. Ищу группу для концертов этой весной — не только для джемов дома.' },
-    { type:'request', title:'Ищу барабанщика в инди-рок группу', band:'Полынь', city:'Москва', instrument:'Барабаны', genre:'Инди-рок',
-      bio:'Делаем меланхоличный инди-рок с элементами шугейза. Готовим первый концерт в декабре, нужен человек со своей установкой.' },
-    { type:'profile', initials:'ДМ', name:'Дима М.', age:24, city:'Москва', instruments:['Бас-гитара'], genres:['Рок','Панк'],
-      bio:'Играю на басу 6 лет, люблю плотный низ и простые панковские риффы. Готов ездить на репетиции через весь город.' },
-    { type:'request', title:'Ищем вокалистку для синти-поп дуэта', band:'Тихий свет', city:'Казань', instrument:'Вокал', genre:'Синти-поп',
-      bio:'Пишем электронику с живым вокалом. Есть студия и готовые инструменталы, нужен голос и тексты.' },
-    { type:'profile', initials:'ЕВ', name:'Женя В.', age:31, city:'Новосибирск', instruments:['Клавиши','Синтезатор'], genres:['Электроника'],
-      bio:'10 лет за клавишами, играю в двух проектах. Открыта к сайд-группе с редкими, но насыщенными репетициями.' },
+  function toggleChip(el) {
+    el.classList.toggle('selected');
+  }
+
+  // ---------- step 4: level ----------
+  function selectLevel(el) {
+    el.parentElement.querySelectorAll('.level-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // ---------- feed ----------
+  const profiles = [
+    { name: 'Даша', age: 24, role: 'Вокалистка', city: 'Москва', genres: ['Инди', 'Поп'], bio: 'Ищу группу для регулярных репетиций и записи EP. Люблю мелодичные вещи.', level: 'Опытный', from: '#8B6CF2', to: '#FF7A3D' },
+    { name: 'Игорь', age: 29, role: 'Барабанщик', city: 'Санкт-Петербург', genres: ['Рок', 'Панк'], bio: 'Собираю трио в духе 90-х. Есть своя репточка, нужен басист и вокал.', level: 'Опытный', from: '#FF7A3D', to: '#FFC98A' },
+    { name: 'Лина', age: 21, role: 'Басистка', city: 'Казань', genres: ['Джаз', 'Фанк'], bio: 'Учусь в консерватории, хочу играть живой джаз-фанк по выходным.', level: 'Средний', from: '#6EE7A0', to: '#8B6CF2' },
+    { name: 'Тимур', age: 27, role: 'Гитарист', city: 'Екатеринбург', genres: ['Метал'], bio: 'Играю 10 лет, есть свой звук. Ищу состав для оригинального материала.', level: 'Опытный', from: '#FF6A6A', to: '#8B6CF2' },
+    { name: 'Соня', age: 23, role: 'Клавишница', city: 'Новосибирск', genres: ['Электроника', 'Инди'], bio: 'Синтезаторы и атмосферные партии. Открыта к любым необычным проектам.', level: 'Новичок', from: '#FFC98A', to: '#6EE7A0' },
   ];
   let feedIndex = 0;
 
-  function renderFeedCard() {
-    const body = document.getElementById('feed-card-body');
-    const stampLike = document.getElementById('stamp-like');
-    const stampSkip = document.getElementById('stamp-skip');
-    stampLike.style.opacity = 0; stampSkip.style.opacity = 0;
-
-    if (feedIndex >= feedItems.length) {
-      body.innerHTML = `
-        <div class="h-full flex flex-col items-center justify-center text-center px-8">
-          <div class="w-16 h-16 rounded-full bg-surface2 border border-line flex items-center justify-center mb-4">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9C93A8" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg>
+  function cardHTML(p, depth) {
+    const scale = 1 - depth * 0.04;
+    const y = depth * 14;
+    return `
+    <div class="swipe-card" data-depth="${depth}" style="transform: translateY(${y}px) scale(${scale}); z-index:${10 - depth};">
+      <div class="w-full h-full flex flex-col" style="background:#16141D; border:1px solid rgba(255,255,255,0.08);">
+        <div class="relative w-full" style="aspect-ratio: 4/5; background: linear-gradient(155deg, ${p.from}, ${p.to});">
+          <div class="stamp like">НРАВИТСЯ</div>
+          <div class="stamp nope">МИМО</div>
+          <div class="absolute inset-x-0 bottom-0 h-28" style="background: linear-gradient(180deg, transparent, rgba(11,10,16,0.85));"></div>
+          <div class="absolute left-5 bottom-4 right-5">
+            <div class="flex items-baseline gap-2">
+              <span class="font-display text-[24px] font-semibold">${p.name}</span>
+              <span class="text-[16px] text-white/80">${p.age}</span>
+            </div>
+            <p class="text-[14px] text-white/90 mt-0.5">${p.role} · ${p.city}</p>
           </div>
-          <p class="font-display font-semibold text-lg">Пока это всё</p>
-          <p class="text-sm text-inkmuted mt-2">Новые профили и заявки появятся здесь совсем скоро. Загляните позже.</p>
+        </div>
+        <div class="flex-1 px-5 py-4 flex flex-col gap-3 overflow-hidden">
+          <div class="flex flex-wrap gap-2">
+            ${p.genres.map(g => `<span class="text-[12px] px-3 py-1 rounded-full" style="background:rgba(255,122,61,0.14); color:#FFD8BF; border:1px solid rgba(255,122,61,0.3);">${g}</span>`).join('')}
+            <span class="text-[12px] px-3 py-1 rounded-full" style="background:rgba(255,255,255,0.06); color:#A79FB2; border:1px solid rgba(255,255,255,0.1);">${p.level}</span>
+          </div>
+          <p class="text-[14px] text-mist leading-relaxed">${p.bio}</p>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderStack() {
+    const stack = document.getElementById('card-stack');
+    const visible = profiles.slice(feedIndex, feedIndex + 3);
+    if (visible.length === 0) {
+      stack.innerHTML = `
+        <div class="w-full h-full flex flex-col items-center justify-center text-center px-8" style="background:#16141D; border:1px solid rgba(255,255,255,0.08); border-radius:28px;">
+          <div class="w-14 h-14 rounded-2xl bg-surface2 flex items-center justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="#A79FB2" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <p class="font-display text-[18px] font-semibold">Пока это все</p>
+          <p class="text-[14px] text-mist mt-2 max-w-[240px]">Новые музыканты появятся здесь совсем скоро. Загляни позже</p>
+          <button onclick="feedIndex=0; renderStack();" class="ghost-btn rounded-2xl px-5 py-3 text-[14px] font-medium mt-6">Показать снова</button>
         </div>`;
       return;
     }
-
-    const item = feedItems[feedIndex];
-    if (item.type === 'profile') {
-      body.innerHTML = `
-        <div class="h-full flex flex-col">
-          <div class="relative h-56 flex items-center justify-center shrink-0" style="background: radial-gradient(120% 120% at 30% 20%, #3a2f4a 0%, #1C1822 70%);">
-            <div class="w-24 h-24 rounded-full flex items-center justify-center font-display font-bold text-2xl" style="background:linear-gradient(135deg,#F2B84B,#FF5C72); color:#120F16;">${item.initials}</div>
-            <span class="absolute top-4 right-4 text-xs font-medium bg-black/40 backdrop-blur px-3 py-1 rounded-full">${item.city}</span>
-          </div>
-          <div class="flex-1 overflow-y-auto p-5">
-            <div class="flex items-baseline justify-between">
-              <h3 class="font-display font-semibold text-lg">${item.name}</h3>
-              <span class="text-inkmuted text-sm">${item.age} лет</span>
-            </div>
-            <div class="mt-2 flex flex-wrap gap-2">
-              ${item.instruments.map(i => `<span class="text-xs font-medium bg-bg border border-line rounded-full px-3 py-1 text-gold">${i}</span>`).join('')}
-              <span class="text-xs font-medium bg-bg border border-line rounded-full px-3 py-1 text-inkmuted">${item.genres.join(' · ')}</span>
-            </div>
-            <p class="mt-3 text-sm text-inkmuted leading-relaxed">${item.bio}</p>
-          </div>
-        </div>`;
-    } else {
-      body.innerHTML = `
-        <div class="h-full flex flex-col">
-          <div class="p-5 pb-4 shrink-0 flex items-start justify-between border-b border-dashed border-line">
-            <div>
-              <p class="text-xs font-medium text-gold">Группа «${item.band}»</p>
-              <h3 class="font-display font-semibold text-lg mt-2 leading-snug">${item.title}</h3>
-            </div>
-            <div class="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center font-display font-bold text-sm" style="background:linear-gradient(135deg,#FF5C72,#F2B84B); color:#120F16;">${item.band[0]}</div>
-          </div>
-          <div class="flex-1 overflow-y-auto p-5">
-            <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-inkmuted mb-4">
-              <span class="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9C93A8" stroke-width="2"><path d="M12 21s-6-5.7-6-10a6 6 0 1112 0c0 4.3-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>
-                ${item.city}
-              </span>
-              <span class="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9C93A8" stroke-width="2"><path d="M9 3h6l1 3h3v15H5V6h3z"/></svg>
-                ${item.instrument}
-              </span>
-            </div>
-            <p class="text-sm text-inkmuted leading-relaxed">${item.bio}</p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <span class="text-xs font-medium bg-bg border border-line rounded-full px-3 py-1 text-inkmuted">${item.instrument}</span>
-              <span class="text-xs font-medium bg-bg border border-line rounded-full px-3 py-1 text-inkmuted">${item.genre}</span>
-            </div>
-          </div>
-        </div>`;
-    }
+    stack.innerHTML = visible.map((p, i) => cardHTML(p, i)).reverse().join('');
   }
 
-  function swipeFeed(dir) {
-    const card = document.getElementById('feed-card');
-    if (feedIndex >= feedItems.length) return;
-    const stamp = document.getElementById(dir === 'like' ? 'stamp-like' : 'stamp-skip');
-    stamp.style.opacity = 1;
-    card.classList.remove('enter');
-    card.classList.add(dir === 'like' ? 'swipe-right' : 'swipe-left');
+  function swipe(dir) {
+    const top = document.querySelector('.swipe-card[data-depth="0"]');
+    if (!top) return;
+    const stamp = top.querySelector(dir === 'right' ? '.stamp.like' : '.stamp.nope');
+    if (stamp) stamp.style.opacity = 1;
+    top.classList.add(dir === 'right' ? 'fly-right' : 'fly-left');
     setTimeout(() => {
       feedIndex++;
-      card.classList.remove('swipe-right', 'swipe-left');
-      renderFeedCard();
-      requestAnimationFrame(() => { card.classList.add('enter'); });
-      if (dir === 'like' && feedItems[feedIndex - 1] && feedIndex % 2 === 0) {
-        showToast('Это мэтч! Загляните во вкладку «Мэтчи»');
-      }
-    }, 380);
+      renderStack();
+    }, 320);
   }
-
-  /* ---------------- requests ---------------- */
-  let myRequests = [
-    { title:'Ищу барабанщика в инди-рок группу', instrument:'Барабаны', genre:'Инди-рок', city:'Москва', status:'Активна', responses:5 },
-    { title:'Нужен басист на сессионную работу', instrument:'Бас-гитара', genre:'Разные жанры', city:'Москва', status:'Активна', responses:2 },
-  ];
-
-  function renderRequestsList() {
-    const wrap = document.getElementById('requests-list-items');
-    if (myRequests.length === 0) {
-      wrap.innerHTML = `<div class="text-center text-sm text-inkmuted py-16">У вас пока нет заявок. Нажмите «+», чтобы опубликовать первую.</div>`;
-      return;
-    }
-    wrap.innerHTML = myRequests.map(r => `
-      <div class="row-tap bg-surface border border-line rounded-3xl p-5">
-        <div class="flex items-start justify-between gap-3">
-          <h4 class="font-display font-semibold text-sm leading-snug">${r.title}</h4>
-          <span class="shrink-0 text-[11px] font-medium bg-bg border border-line text-gold rounded-full px-2.5 py-1">${r.status}</span>
-        </div>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <span class="text-xs font-medium bg-bg border border-line rounded-full px-3 py-1 text-inkmuted">${r.instrument}</span>
-          <span class="text-xs font-medium bg-bg border border-line rounded-full px-3 py-1 text-inkmuted">${r.genre}</span>
-          <span class="text-xs font-medium bg-bg border border-line rounded-full px-3 py-1 text-inkmuted">${r.city}</span>
-        </div>
-        <p class="mt-3 text-xs text-inkmuted">Откликов: <span class="text-ink font-medium">${r.responses}</span></p>
-      </div>
-    `).join('');
-  }
-
-  function openCreateRequest() {
-    document.getElementById('requests-list').style.transform = 'translateX(-100%)';
-    const cv = document.getElementById('requests-create');
-    cv.classList.remove('hidden');
-    requestAnimationFrame(() => { cv.style.transform = 'translateX(0)'; });
-  }
-
-  function closeCreateRequest(instant) {
-    const lv = document.getElementById('requests-list');
-    const cv = document.getElementById('requests-create');
-    if (instant) {
-      lv.style.transform = 'translateX(0)';
-      cv.style.transform = 'translateX(100%)';
-      cv.classList.add('hidden');
-      return;
-    }
-    lv.style.transform = 'translateX(0)';
-    cv.style.transform = 'translateX(100%)';
-    setTimeout(() => cv.classList.add('hidden'), 300);
-  }
-
-  function publishRequest() {
-    const title = document.getElementById('rq-title').value.trim() || 'Ищу музыканта в группу';
-    const instrument = document.getElementById('rq-instrument').value.trim() || 'Не указано';
-    const genre = document.getElementById('rq-genre').value.trim() || 'Не указан';
-    const city = document.getElementById('rq-city').value.trim() || 'Не указан';
-
-    myRequests.unshift({ title, instrument, genre, city, status: 'Активна', responses: 0 });
-    renderRequestsList();
-
-    ['rq-title','rq-instrument','rq-genre','rq-city','rq-desc'].forEach(id => document.getElementById(id).value = '');
-    closeCreateRequest();
-    showToast('Заявка опубликована');
-  }
-
-  /* ---------------- matches / chat ---------------- */
-  const matches = [
-    { name:'Дима Морозов', initials:'ДМ', sub:'Бас-гитара', time:'14:02', unread:true,
-      messages:[
-        {from:'them', text:'Привет! Видел твой профиль, классное демо.'},
-        {from:'them', text:'Могу подъехать на прослушивание в субботу'},
-      ] },
-    { name:'Группа «Полынь»', initials:'П', sub:'Заявка: барабанщик', time:'Вчера', unread:true,
-      messages:[
-        {from:'me', text:'Привет! Готов обсудить репетиции'},
-        {from:'them', text:'Классно, давай на репетицию в четверг'},
-      ] },
-    { name:'Женя Волкова', initials:'ЕВ', sub:'Клавиши, синтезаторы', time:'Вторник', unread:false,
-      messages:[
-        {from:'them', text:'Скинь, пожалуйста, ваши демки'},
-        {from:'me', text:'Сейчас отправлю ссылку'},
-      ] },
-    { name:'Слава Ли', initials:'СЛ', sub:'Саксофон', time:'Пн', unread:false,
-      messages:[
-        {from:'them', text:'Играю джаз и фанк, открыт к экспериментам'},
-      ] },
-  ];
-  let currentChat = null;
-
-  function renderMatches() {
-    const wrap = document.getElementById('matches-list');
-    wrap.innerHTML = matches.map((m, i) => `
-      <button onclick="openChat(${i})" class="row-tap flex items-center gap-4 px-5 py-4 text-left hover:bg-surface2">
-        <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center font-display font-semibold text-sm" style="background:linear-gradient(135deg,#F2B84B,#FF5C72); color:#120F16;">${m.initials}</div>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center justify-between">
-            <p class="font-medium text-sm truncate">${m.name}</p>
-            <span class="text-xs text-inkmuted shrink-0 ml-2">${m.time}</span>
-          </div>
-          <p class="text-sm text-inkmuted truncate">${m.sub} · ${m.messages[m.messages.length - 1].text}</p>
-        </div>
-        ${m.unread ? '<span class="shrink-0 w-2.5 h-2.5 rounded-full bg-coral"></span>' : ''}
-      </button>
-    `).join('');
-  }
-
-  function openChat(i) {
-    currentChat = i;
-    const m = matches[i];
-    m.unread = false;
-    document.getElementById('chat-avatar').textContent = m.initials;
-    document.getElementById('chat-avatar').style.background = 'linear-gradient(135deg,#F2B84B,#FF5C72)';
-    document.getElementById('chat-avatar').style.color = '#120F16';
-    document.getElementById('chat-name').textContent = m.name;
-    document.getElementById('chat-sub').textContent = m.sub;
-    renderMessages();
-    document.getElementById('screen-app').classList.add('hidden');
-    document.getElementById('screen-app').classList.remove('flex');
-    const chat = document.getElementById('screen-chat');
-    chat.classList.remove('hidden');
-    chat.classList.add('flex');
-  }
-
-  function closeChat() {
-    document.getElementById('screen-chat').classList.add('hidden');
-    document.getElementById('screen-chat').classList.remove('flex');
-    document.getElementById('screen-app').classList.remove('hidden');
-    document.getElementById('screen-app').classList.add('flex');
-    renderMatches();
-    document.getElementById('matches-badge').textContent = matches.filter(m => m.unread).length;
-    switchTab('matches');
-  }
-
-  function renderMessages() {
-    const wrap = document.getElementById('chat-messages');
-    const m = matches[currentChat];
-    wrap.innerHTML = m.messages.map(msg => `
-      <div class="max-w-[78%] ${msg.from === 'me' ? 'self-end' : 'self-start'}">
-        <div class="${msg.from === 'me' ? 'bg-gold text-bg' : 'bg-surface text-ink border border-line'} rounded-2xl ${msg.from === 'me' ? 'rounded-br-md' : 'rounded-bl-md'} px-4 py-2.5 text-sm leading-relaxed">
-          ${msg.text}
-        </div>
-      </div>
-    `).join('');
-    wrap.scrollTop = wrap.scrollHeight;
-  }
-
-  function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
-    if (!text || currentChat === null) return;
-    matches[currentChat].messages.push({ from: 'me', text });
-    input.value = '';
-    renderMessages();
-
-    setTimeout(() => {
-      matches[currentChat].messages.push({ from: 'them', text: 'Ок, договорились! Напишу ближе к делу.' });
-      renderMessages();
-    }, 1100);
-  }
-
-  /* ---------------- profile audio ---------------- */
-  let playing = false;
-  function togglePlay() {
-    playing = !playing;
-    document.getElementById('waveform').classList.toggle('playing', playing);
-    document.getElementById('play-icon').innerHTML = playing
-      ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
-      : '<path d="M8 5v14l11-7z"/>';
-  }
-
-  /* ---------------- init ---------------- */
-  renderFeedCard();
-  renderRequestsList();
-  renderMatches();
 </script>
 </body>
 </html>
